@@ -11,11 +11,20 @@ React server components don't track state between rerenders, so leaving the uniq
 can cause errors with matching props and state in child components if the list order changes.
 */
 import { Button } from "@/components/ui/button";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import type { Database } from "@/lib/schema";
 import Image from "next/image";
+import { useState } from "react";
+import EditSpeciesDialog from "./edit-species-dialog";
+
 type Species = Database["public"]["Tables"]["species"]["Row"];
 
-export default function SpeciesCard({ species }: { species: Species }) {
+export default function SpeciesCard({ species, userId }: { species: Species; userId: string }) {
+  const [open, setOpen] = useState(false);
+
+  console.log('Author:', species.author);
+  console.log('UserId:', userId);
+
   return (
     <div className="m-4 w-72 min-w-72 flex-none rounded border-2 p-3 shadow">
       {species.image && (
@@ -26,8 +35,56 @@ export default function SpeciesCard({ species }: { species: Species }) {
       <h3 className="mt-3 text-2xl font-semibold">{species.scientific_name}</h3>
       <h4 className="text-lg font-light italic">{species.common_name}</h4>
       <p>{species.description ? species.description.slice(0, 150).trim() + "..." : ""}</p>
-      {/* Replace the button with the detailed view dialog. */}
-      <Button className="mt-3 w-full">Learn More</Button>
+
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogTrigger asChild>
+          <Button className="mt-3 w-full">Learn More</Button>
+        </DialogTrigger>
+        <DialogContent className="max-h-screen overflow-y-auto sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl">{species.scientific_name}</DialogTitle>
+          </DialogHeader>
+
+          <div className="mt-4 space-y-4">
+            {species.scientific_name && (
+              <div>
+                <h4 className="font-semibold">Scientific Name</h4>
+                <p className="text-gray-700">{species.scientific_name}</p>
+              </div>
+            )}
+            {species.common_name && (
+              <div>
+                <h4 className="font-semibold">Common Name</h4>
+                <p className="text-gray-700">{species.common_name}</p>
+              </div>
+            )}
+
+            <div>
+              <h4 className="font-semibold">Kingdom</h4>
+              <p className="text-gray-700">{species.kingdom}</p>
+            </div>
+
+            {species.total_population && (
+              <div>
+                <h4 className="font-semibold">Total Population</h4>
+                <p className="text-gray-700">{species.total_population.toLocaleString()}</p>
+              </div>
+            )}
+
+            {species.description && (
+              <div>
+                <h4 className="font-semibold">Description</h4>
+                <p className="text-gray-700">{species.description}</p>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+      {/* Button to only be shown if the user created this species */}
+      {species.author === userId && (
+        <EditSpeciesDialog species={species} />
+
+      )}
     </div>
   );
 }
